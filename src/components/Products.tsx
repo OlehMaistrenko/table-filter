@@ -46,6 +46,7 @@ export default function Products() {
       toggleLoading();
     })();
   }, [filtersState, toggleLoading]);
+  console.log(filtersState);
 
   return (
     <>

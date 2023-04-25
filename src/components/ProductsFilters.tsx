@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useCallback } from "react";
+import { useState, useContext, useEffect } from "react";
 import {
   Button,
   FormControl,
@@ -6,7 +6,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
+import Select from "@mui/material/Select";
 import FiltersState from "../types/FiltersState";
 import { AppContext } from "../App";
 import getCategories from "../api/getCategories";
@@ -28,23 +28,11 @@ function ProductsFilters({
   const [categories, setCategories] = useState<string[]>([]);
   const [searchInputValue, setSearchInputValue] = useState("");
   const debouncedSearchInputValue = useDebounce<string>(searchInputValue, 1000);
-  const handleRowsChange = async (event: SelectChangeEvent) => {
-    setFiltersState((prev) => {
-      const rowsPerPage = parseInt(event.target.value);
-      const maxPage = Math.ceil(productsCount / rowsPerPage);
-      const page = maxPage < prev.page ? maxPage : prev.page;
-      return { ...prev, rowsPerPage, page };
-    });
-  };
-  const handleClearFilters = () => {
-    setFiltersState(defaultFiltersState);
-    setSearchInputValue("");
-  };
-  const handleCategoryChange = (event: SelectChangeEvent) => {
-    setFiltersState((prev) => {
-      return { ...prev, category: event.target.value };
-    });
-  };
+  const [category, setCategory] = useState<string>(filtersState.category);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(
+    filtersState.rowsPerPage
+  );
+
   const areFiltersDefault = () => {
     const keys = Object.keys(filtersState) as Array<keyof typeof filtersState>;
     return keys.reduce(
@@ -52,14 +40,30 @@ function ProductsFilters({
       true
     );
   };
+
+  const handleClearFilters = () => {
+    setFiltersState(defaultFiltersState);
+    setSearchInputValue("");
+  };
   useEffect(() => {
     setFiltersState((prev) => {
-      return { ...prev, searchVal: debouncedSearchInputValue };
+      const maxPage = Math.ceil(productsCount / rowsPerPage) || 1;
+      const page = maxPage < prev.page ? maxPage : prev.page;
+      return {
+        ...prev,
+        category,
+        page,
+        rowsPerPage,
+        searchVal: debouncedSearchInputValue,
+      };
     });
-  }, [debouncedSearchInputValue, setFiltersState]);
+  }, [debouncedSearchInputValue, category, rowsPerPage, setFiltersState]);
+
   useEffect(() => {
     (async () => {
       toggleLoading();
+      console.log("initial");
+
       const data = await getCategories();
       setCategories(data);
       toggleLoading();
@@ -78,7 +82,10 @@ function ProductsFilters({
       {categories.length && (
         <FormControl variant='standard' sx={{ minWidth: 100 }}>
           <InputLabel>Category</InputLabel>
-          <Select value={filtersState.category} onChange={handleCategoryChange}>
+          <Select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
             <MenuItem value=''>All</MenuItem>
             {categories.map((category) => (
               <MenuItem key={category} value={category}>
@@ -91,8 +98,8 @@ function ProductsFilters({
       <FormControl variant='standard' sx={{ minWidth: 100 }}>
         <InputLabel>Rows per page</InputLabel>
         <Select
-          value={filtersState.rowsPerPage.toString()}
-          onChange={handleRowsChange}
+          value={rowsPerPage.toString()}
+          onChange={(e) => setRowsPerPage(parseInt(e.target.value))}
         >
           <MenuItem value={10}>10</MenuItem>
           <MenuItem value={20}>20</MenuItem>
