@@ -11,7 +11,7 @@ import FiltersState from "../types/FiltersState";
 import { AppContext } from "../App";
 import getCategories from "../api/getCategories";
 import classes from "./ProductsFilters.module.css";
-import debounce from "lodash.debounce";
+import useDebounce from "../hooks/useDebounce";
 
 function ProductsFilters({
   defaultFiltersState,
@@ -27,6 +27,7 @@ function ProductsFilters({
   const { toggleLoading } = useContext(AppContext);
   const [categories, setCategories] = useState<string[]>([]);
   const [searchInputValue, setSearchInputValue] = useState("");
+  const debouncedSearchInputValue = useDebounce<string>(searchInputValue, 1000);
   const handleRowsChange = async (event: SelectChangeEvent) => {
     setFiltersState((prev) => {
       const rowsPerPage = parseInt(event.target.value);
@@ -45,15 +46,17 @@ function ProductsFilters({
     });
   };
   const areFiltersDefault = () => {
-    return JSON.stringify(filtersState) === JSON.stringify(defaultFiltersState);
+    const keys = Object.keys(filtersState) as Array<keyof typeof filtersState>;
+    return keys.reduce(
+      (acc, key) => acc && filtersState[key] === defaultFiltersState[key],
+      true
+    );
   };
-
-  const handleSearchInputChange = useCallback(
-    debounce((searchInputValue) => {
-      setFiltersState((prev) => ({ ...prev, searchVal: searchInputValue }));
-    }, 1000),
-    []
-  );
+  useEffect(() => {
+    setFiltersState((prev) => {
+      return { ...prev, searchVal: debouncedSearchInputValue };
+    });
+  }, [debouncedSearchInputValue, setFiltersState]);
   useEffect(() => {
     (async () => {
       toggleLoading();
@@ -69,7 +72,6 @@ function ProductsFilters({
         value={searchInputValue}
         onChange={(e) => {
           setSearchInputValue(e.currentTarget.value);
-          handleSearchInputChange(e.currentTarget.value);
         }}
         variant='standard'
       />

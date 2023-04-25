@@ -86,7 +86,7 @@ export default function Products() {
         </div>
       )}
 
-      {Math.ceil(productsCount / filtersState.rowsPerPage) > 1 && (
+      {productsCount > filtersState.rowsPerPage && (
         <Pagination
           count={Math.ceil(productsCount / filtersState.rowsPerPage)}
           page={filtersState.page}

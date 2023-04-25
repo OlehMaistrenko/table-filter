@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import "./App.css";
 import Products from "./components/Products";
-import Loader from "./ui/Loader";
+import Loader from "./components/ui/Loader";
 
 interface AppContextInterface {
   toggleLoading: () => void;
