@@ -10,8 +10,10 @@ import {
   TableRow,
 } from "@mui/material";
 import { AppContext } from "../App";
+import getCategories from "../api/getCategories";
 import getProducts from "../api/getProducts";
-import ProductsFilters from "./ProductsFilters";
+import Filters from "./Filters";
+import FilterConfig from "../types/FiltersConfig";
 
 const defaultFiltersState: FiltersState = {
   page: 1,
@@ -20,13 +22,33 @@ const defaultFiltersState: FiltersState = {
   searchVal: "",
 };
 
+const constantFiltersConfig: FilterConfig = [
+  {
+    type: "text",
+    label: "Search",
+    name: "searchVal",
+    initialValue: "",
+  },
+  {
+    type: "select",
+    label: "Rows per page",
+    name: "rowsPerPage",
+    initialValue: "10",
+    values: ["10", "20", "30"],
+  },
+];
 export default function Products() {
   const [filtersState, setFiltersState] =
     useState<FiltersState>(defaultFiltersState);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsCount, setProductsCount] = useState<number>(0);
-
   const { toggleLoading } = useContext(AppContext);
+  const handleFiltersUpdate = (data: { [x: string]: any }) => {
+    setFiltersState((prev) => ({ ...prev, ...data, page: 1 }));
+  };
+  const [filtersConfig, setFiltersConfig] = useState<FilterConfig>(
+    constantFiltersConfig
+  );
 
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
@@ -46,16 +68,29 @@ export default function Products() {
       toggleLoading();
     })();
   }, [filtersState, toggleLoading]);
-  console.log(filtersState);
+  useEffect(() => {
+    (async () => {
+      const categories = await getCategories();
+      setFiltersConfig([
+        ...constantFiltersConfig,
+        {
+          type: "select",
+          label: "Category",
+          name: "category",
+          initialValue: "",
+          values: ["", ...categories],
+        },
+      ]);
+    })();
+  }, []);
 
   return (
     <>
-      <ProductsFilters
-        defaultFiltersState={defaultFiltersState}
-        productsCount={productsCount}
-        filtersState={filtersState}
-        setFiltersState={setFiltersState}
-      />
+      <Filters
+        filtersConfig={filtersConfig}
+        onFiltersUpdate={handleFiltersUpdate}
+      ></Filters>
+
       {products.length ? (
         <Table size='small'>
           <TableHead>
