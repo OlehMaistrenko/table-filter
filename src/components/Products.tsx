@@ -14,6 +14,7 @@ import getCategories from "../api/getCategories";
 import getProducts from "../api/getProducts";
 import Filters from "./Filters";
 import FilterConfig from "../types/FiltersConfig";
+import useDebounce from "../hooks/useDebounce";
 
 const defaultFiltersState: FiltersState = {
   page: 1,
@@ -40,6 +41,7 @@ const constantFiltersConfig: FilterConfig = [
 export default function Products() {
   const [filtersState, setFiltersState] =
     useState<FiltersState>(defaultFiltersState);
+  const debouncedFiltersState = useDebounce(filtersState, 700);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsCount, setProductsCount] = useState<number>(0);
   const { toggleLoading } = useContext(AppContext);
@@ -62,12 +64,12 @@ export default function Products() {
   useEffect(() => {
     (async () => {
       toggleLoading();
-      const data = await getProducts(filtersState);
+      const data = await getProducts(debouncedFiltersState);
       setProducts(data.products);
       setProductsCount(data.total);
       toggleLoading();
     })();
-  }, [filtersState, toggleLoading]);
+  }, [debouncedFiltersState, toggleLoading]);
   useEffect(() => {
     (async () => {
       const categories = await getCategories();
@@ -122,10 +124,10 @@ export default function Products() {
         </div>
       )}
 
-      {productsCount > filtersState.rowsPerPage && (
+      {productsCount > debouncedFiltersState.rowsPerPage && (
         <Pagination
-          count={Math.ceil(productsCount / filtersState.rowsPerPage)}
-          page={filtersState.page}
+          count={Math.ceil(productsCount / debouncedFiltersState.rowsPerPage)}
+          page={debouncedFiltersState.page}
           onChange={handlePageChange}
         />
       )}
