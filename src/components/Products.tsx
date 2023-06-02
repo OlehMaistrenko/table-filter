@@ -1,5 +1,7 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useReducer } from "react";
 import FiltersState from "../types/FiltersState";
+import PaginationState from "../types/PaginationState";
+import ProductsPageState from "../types/ProductsPageState";
 import Product from "../types/Product";
 import Pagination from "@mui/material/Pagination";
 import {
@@ -16,11 +18,47 @@ import Filters from "./Filters";
 import FilterConfig from "../types/FiltersConfig";
 import useDebounce from "../hooks/useDebounce";
 
-const defaultFiltersState: FiltersState = {
-  page: 1,
-  rowsPerPage: 10,
-  category: "",
-  searchVal: "",
+type Action =
+  | { type: "UPDATE_PAGE"; payload: Partial<PaginationState> }
+  | {
+      type: "UPDATE_FILTER";
+      payload: {
+        paginationState: Partial<PaginationState>;
+        filtersState: Partial<FiltersState>;
+      };
+    };
+
+const initialProductsPageState: ProductsPageState = {
+  filtersState: { category: "", searchVal: "" },
+  paginationState: { page: 1, rowsPerPage: 10 },
+};
+const reducer = (
+  ProductsPageState: ProductsPageState,
+  action: Action
+): ProductsPageState => {
+  switch (action.type) {
+    case "UPDATE_PAGE":
+      return {
+        filtersState: ProductsPageState.filtersState,
+        paginationState: {
+          ...ProductsPageState.paginationState,
+          ...action.payload,
+        },
+      };
+    case "UPDATE_FILTER":
+      return {
+        filtersState: {
+          ...ProductsPageState.filtersState,
+          ...action.payload.filtersState,
+        },
+        paginationState: {
+          ...ProductsPageState.paginationState,
+          ...action.payload.paginationState,
+        },
+      };
+    default:
+      return ProductsPageState;
+  }
 };
 
 const constantFiltersConfig: FilterConfig = [
@@ -30,46 +68,54 @@ const constantFiltersConfig: FilterConfig = [
     name: "searchVal",
     initialValue: "",
   },
-  {
-    type: "select",
-    label: "Rows per page",
-    name: "rowsPerPage",
-    initialValue: "10",
-    values: ["10", "20", "30"],
-  },
 ];
 export default function Products() {
-  const [filtersState, setFiltersState] =
-    useState<FiltersState>(defaultFiltersState);
+  const [filtersState, setFiltersState] = useState<FiltersState>(
+    initialProductsPageState.filtersState
+  );
   const debouncedFiltersState = useDebounce(filtersState, 700);
   const [products, setProducts] = useState<Product[]>([]);
   const [productsCount, setProductsCount] = useState<number>(0);
   const { toggleLoading } = useContext(AppContext);
   const handleFiltersUpdate = (data: { [x: string]: any }) => {
-    setFiltersState((prev) => ({ ...prev, ...data, page: 1 }));
+    setFiltersState((prev) => ({ ...prev, ...data }));
   };
   const [filtersConfig, setFiltersConfig] = useState<FilterConfig>(
     constantFiltersConfig
+  );
+
+  const [productsPageState, dispatchPoductsPageState] = useReducer(
+    reducer,
+    initialProductsPageState
   );
 
   const handlePageChange = (
     event: React.ChangeEvent<unknown>,
     value: number
   ) => {
-    setFiltersState((prev) => {
-      return { ...prev, page: value };
-    });
+    dispatchPoductsPageState({ type: "UPDATE_PAGE", payload: { page: value } });
   };
 
   useEffect(() => {
     (async () => {
       toggleLoading();
-      const data = await getProducts(debouncedFiltersState);
+      const data = await getProducts(productsPageState);
       setProducts(data.products);
       setProductsCount(data.total);
       toggleLoading();
     })();
-  }, [debouncedFiltersState, toggleLoading]);
+  }, [productsPageState, toggleLoading]);
+
+  useEffect(() => {
+    dispatchPoductsPageState({
+      type: "UPDATE_FILTER",
+      payload: {
+        filtersState: debouncedFiltersState,
+        paginationState: { page: 1 },
+      },
+    });
+  }, [debouncedFiltersState]);
+
   useEffect(() => {
     (async () => {
       const categories = await getCategories();
@@ -124,13 +170,32 @@ export default function Products() {
         </div>
       )}
 
-      {productsCount > debouncedFiltersState.rowsPerPage && (
-        <Pagination
-          count={Math.ceil(productsCount / debouncedFiltersState.rowsPerPage)}
-          page={debouncedFiltersState.page}
-          onChange={handlePageChange}
-        />
-      )}
+      <div className='products__bottom'>
+        <Filters
+          filtersConfig={[
+            {
+              type: "select",
+              label: "Rows per page",
+              name: "rowsPerPage",
+              initialValue: "10",
+              values: ["10", "20", "30"],
+            },
+          ]}
+          onFiltersUpdate={(data) => {
+            const payload: Partial<PaginationState> = data;
+            dispatchPoductsPageState({ type: "UPDATE_PAGE", payload });
+          }}
+        ></Filters>
+        {productsCount > productsPageState.paginationState.rowsPerPage && (
+          <Pagination
+            count={Math.ceil(
+              productsCount / productsPageState.paginationState.rowsPerPage
+            )}
+            page={productsPageState.paginationState.page}
+            onChange={handlePageChange}
+          />
+        )}
+      </div>
     </>
   );
 }

@@ -1,11 +1,14 @@
-import FiltersState from "../types/FiltersState";
+import ProductsPageState from "../types/ProductsPageState";
 import Product from "../types/Product";
-export default function getProducts(filtersState: FiltersState) {
+export default function getProducts({
+  filtersState,
+  paginationState,
+}: ProductsPageState) {
   return fetch(
     `https://dummyjson.com/products${
       filtersState.category.length ? `/category/${filtersState.category}` : ""
-    }?limit=${filtersState.rowsPerPage}&skip=${
-      filtersState.rowsPerPage * (filtersState.page - 1)
+    }?limit=${paginationState.rowsPerPage}&skip=${
+      paginationState.rowsPerPage * (paginationState.page - 1)
     }`
   )
     .then((res) => res.json())

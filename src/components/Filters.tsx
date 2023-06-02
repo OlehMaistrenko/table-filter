@@ -103,7 +103,9 @@ function Filters({
             return 0;
         }
       })}
-      {isDirty && <Button onClick={clearFilters}>Clear filters</Button>}
+      {isDirty && filtersConfig.length > 1 && (
+        <Button onClick={clearFilters}>Clear filters</Button>
+      )}
     </div>
   );
 }
