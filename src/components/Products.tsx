@@ -3,7 +3,8 @@ import FiltersState from "../types/FiltersState";
 import PaginationState from "../types/PaginationState";
 import ProductsPageState from "../types/ProductsPageState";
 import Product from "../types/Product";
-import Pagination from "@mui/material/Pagination";
+// import Pagination from "@mui/material/Pagination";
+import Pagination from "./Pagination/Pagination";
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import getProducts from "../api/getProducts";
 import Filters from "./Filters";
 import FilterConfig from "../types/FiltersConfig";
 import useDebounce from "../hooks/useDebounce";
+import UsePagination from "./Pagination/UsePagination";
 
 type Action =
   | { type: "UPDATE_PAGE"; payload: Partial<PaginationState> }
@@ -89,11 +91,14 @@ export default function Products() {
     initialProductsPageState
   );
 
-  const handlePageChange = (
-    event: React.ChangeEvent<unknown>,
-    value: number
-  ) => {
+  const handlePageChange = (value: number) => {
     dispatchPoductsPageState({ type: "UPDATE_PAGE", payload: { page: value } });
+  };
+  const handlePageChangeHook = (
+    event: React.ChangeEvent<unknown>,
+    page: number
+  ) => {
+    dispatchPoductsPageState({ type: "UPDATE_PAGE", payload: { page } });
   };
 
   useEffect(() => {
@@ -186,15 +191,20 @@ export default function Products() {
             dispatchPoductsPageState({ type: "UPDATE_PAGE", payload });
           }}
         ></Filters>
-        {productsCount > productsPageState.paginationState.rowsPerPage && (
-          <Pagination
-            count={Math.ceil(
-              productsCount / productsPageState.paginationState.rowsPerPage
-            )}
-            page={productsPageState.paginationState.page}
-            onChange={handlePageChange}
-          />
-        )}
+        <Pagination
+          count={Math.ceil(
+            productsCount / productsPageState.paginationState.rowsPerPage
+          )}
+          page={productsPageState.paginationState.page}
+          onChange={handlePageChange}
+        />
+        <UsePagination
+          count={Math.ceil(
+            productsCount / productsPageState.paginationState.rowsPerPage
+          )}
+          page={productsPageState.paginationState.page}
+          onChange={handlePageChangeHook}
+        ></UsePagination>
       </div>
     </>
   );

@@ -1,0 +1,24 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 400;
+  width: 30px;
+  height: 30px;
+  border-radius: 100%;
+  cursor: pointer;
+  user-select: none;
+}
+.button:hover {
+  background: rgb(223, 223, 223);
+}
+.button.active {
+  font-weight: 700;
+  background: rgb(180, 180, 180);
+}
+.button.disabled {
+  pointer-events: none;
+  opacity: 0.3;
+}
